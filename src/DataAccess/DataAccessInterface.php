@@ -2,7 +2,7 @@
 
 namespace ABSCore\DataAccess;
 
-use Zend\Di\ServiceLocatorInterface;
+use Zend\ServiceManager\ServiceLocatorInterface;
 
 interface DataAccessInterface
 {

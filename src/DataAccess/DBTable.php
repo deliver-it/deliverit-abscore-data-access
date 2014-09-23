@@ -2,7 +2,7 @@
 
 namespace ABSCore\DataAccess;
 
-use Zend\Di\ServiceLocatorInterface;
+use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\Db\TableGateway\TableGatewayInterface;
 use Zend\Db\TableGateway\TableGateway;
 use Zend\Db\ResultSet\ResultSet;
@@ -97,9 +97,10 @@ class DBTable implements DataAccessInterface
 
     protected function createTableGateway()
     {
-        $resultSet = new ResultSet($this->getPrototype());
-        $tableGateway = new TableGateway($this->getAdapter(), null, $resultSet);
-        $this->setTableGateway($TableGateway);
+        $resultSet = new ResultSet();
+        $resultSet->setArrayObjectPrototype($this->getPrototype());
+        $tableGateway = new TableGateway($this->getTableName(), $this->getAdapter(), null, $resultSet);
+        $this->setTableGateway($tableGateway);
 
         return $this;
     }
