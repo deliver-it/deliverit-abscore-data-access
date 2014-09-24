@@ -24,14 +24,14 @@ class DBTable implements DataAccessInterface
 {
 
     /**
-     * Contante que determina o sufixo para o protótipo customizado
+     * Constante que determina o sufixo para o protótipo customizado
      */
     const PROTOTYPE_SUFFIX = 'Prototype';
 
     /**
      * Gerenciador de serviços
      *
-     * @var Zend\ServiceManager\ServiceLocatorInterface
+     * @var \Zend\ServiceManager\ServiceLocatorInterface
      * @access protected
      */
     protected $serviceLocator;
@@ -55,7 +55,7 @@ class DBTable implements DataAccessInterface
     /**
      * Gateway da tabela no banco de dados
      *
-     * @var Zend\Db\TableGateway\TableGatewayInterface
+     * @var \Zend\Db\TableGateway\TableGatewayInterface
      * @access protected
      */
     protected $tableGateway;
@@ -63,7 +63,7 @@ class DBTable implements DataAccessInterface
     /**
      * Adaptador de banco de dados
      *
-     * @var Zend\Db\Adapter\AdapterInterface
+     * @var \Zend\Db\Adapter\AdapterInterface
      * @access protected
      */
     protected $adapter;
@@ -73,7 +73,7 @@ class DBTable implements DataAccessInterface
      *
      * @param string $resource Nome do recurso(tabela no banco de dados)
      * @param mixed $primaryKey Chave(s) primárias
-     * @param Zend\ServiceManager\ServiceLocatorInterface $service Gerenciador de serviços
+     * @param \Zend\ServiceManager\ServiceLocatorInterface $service Gerenciador de serviços
      * @access public
      */
     public function __construct($resource, $primaryKey, ServiceLocatorInterface $service)
@@ -86,7 +86,7 @@ class DBTable implements DataAccessInterface
     /**
      * Método para busca de registro único
      *
-     * @throws Exception Quando o registro não é encontrado
+     * @throws \Exception Quando o registro não é encontrado
      * @param mixed $primaryKey Chave(s) primária(s)
      * @access public
      * @return mixed Registro encontrado
@@ -117,9 +117,9 @@ class DBTable implements DataAccessInterface
     /**
      * Define o gateway de tabela do banco de dados
      *
-     * @param TableGatewayInterface $tableGateway
+     * @param \Zend\Db\TableGateway\TableGatewayInterface $tableGateway
      * @access public
-     * @return ABSCore\DataAccess\DBTable Próprio objeto para encadeamento
+     * @return DBTable Próprio objeto para encadeamento
      */
     public function setTableGateway(TableGatewayInterface $tableGateway)
     {
@@ -131,7 +131,7 @@ class DBTable implements DataAccessInterface
      * Obtenção do gateway de tabela do banco de dados
      *
      * @access public
-     * @return Zend\Db\TableGateway\TableGatewayInterface
+     * @return \Zend\Db\TableGateway\TableGatewayInterface
      */
     public function getTableGateway()
     {
@@ -167,7 +167,7 @@ class DBTable implements DataAccessInterface
      * Obtenção do gerenciador de serviços
      *
      * @access public
-     * @return Zend\ServiceManager\ServiceLocatorInterface
+     * @return \Zend\ServiceManager\ServiceLocatorInterface
      */
     public function getServiceLocator()
     {
@@ -177,9 +177,9 @@ class DBTable implements DataAccessInterface
     /**
      * Define o adaptador de banco de dados
      *
-     * @param Zend\Db\Adapter\AdapterInterface $adapter
+     * @param \Zend\Db\Adapter\AdapterInterface $adapter
      * @access public
-     * @return ABSCore\DataAccess\DBTable Próprio objeto para encadeamento
+     * @return DBTable Próprio objeto para encadeamento
      */
     public function setAdapter(AdapterInterface $adapter)
     {
@@ -192,7 +192,7 @@ class DBTable implements DataAccessInterface
      *
      * @throws Exception quando um adaptador não foi anteriormente definido
      * @access public
-     * @return Zend\Db\Adapter\AdapterInterface
+     * @return \Zend\Db\Adapter\AdapterInterface
      */
     public function getAdapter()
     {
@@ -207,7 +207,7 @@ class DBTable implements DataAccessInterface
      * construção
      *
      * @access protected
-     * @return ABSCore\DataAccess\DBTable Próprio objeto para encadeamento
+     * @return DBTable Próprio objeto para encadeamento
      */
     protected function createTableGateway()
     {
@@ -285,10 +285,10 @@ class DBTable implements DataAccessInterface
     /**
      * Realiza a verificação de um conjunto de chaves com o conjunto de chaves da tabela
      *
-     * @throws Exception quando a quantidade de chaves passadas é diferente da quantidade de chaves da tabela
+     * @throws \Exception quando a quantidade de chaves passadas é diferente da quantidade de chaves da tabela
      * @param mixed $primaryKey
      * @access protected
-     * @return ABSCore\DataAccess\DBTable Próprio objeto para encadeamento
+     * @return DBTable Próprio objeto para encadeamento
      */
     protected function verifyPrimaryKey($primaryKey)
     {
@@ -310,10 +310,10 @@ class DBTable implements DataAccessInterface
     /**
      * Define o conjunto de chaves primárias
      *
-     * @throws Exception quando o conjunto de chaves é vazio
+     * @throws \Exception quando o conjunto de chaves é vazio
      * @param mixed $primaryKey
      * @access protected
-     * @return ABSCore\DataAccess\DBTable Próprio objeto para encadeamento
+     * @return DBTable Próprio objeto para encadeamento
      */
     protected function setPrimaryKey($primaryKey)
     {
@@ -331,10 +331,10 @@ class DBTable implements DataAccessInterface
     /**
      * Define o nome da tabela do banco de dados
      *
-     * @throws Exception quando o nome da tabela é vazio
+     * @throws \Exception quando o nome da tabela é vazio
      * @param string $name Nome da tabela
      * @access protected
-     * @return ABSCore\DataAccess\DBTable Próprio objeto para encadeamento
+     * @return DBTable Próprio objeto para encadeamento
      */
     protected function setTableName($name)
     {
