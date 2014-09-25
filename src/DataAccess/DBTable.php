@@ -7,6 +7,8 @@ use Zend\Db\TableGateway\TableGatewayInterface;
 use Zend\Db\TableGateway\TableGateway;
 use Zend\Db\ResultSet\ResultSet;
 use Zend\Db\Adapter\AdapterInterface;
+use Zend\Paginator\Adapter\DbTableGateway;
+use Zend\Paginator\Paginator;
 use Zend\Filter\Word\SeparatorToCamelCase;
 use Exception;
 use ArrayObject;
@@ -103,16 +105,65 @@ class DBTable implements DataAccessInterface
         return $row;
     }
 
-    public function fetchAll($conditions, array $options)
+    /**
+     * Obtenção de registros
+     *
+     * @param mixed $conditions Condições de busca
+     * @param array $options Opções de busca
+     * @access public
+     * @return \Zend\Paginator\Paginator | \Zend\Db\ResultSet\ResultSet
+     */
+    public function fetchAll($conditions=null, array $options = array())
     {
-    }
-    public function save($data)
-    {
-    }
-    public function delete($conditions)
-    {
+        if (!array_key_exists('paginated',$options) || $options['paginated']) {
+            $method = 'paginatedItems';
+        } else {
+            $method = 'unpaginatedItems';
+        }
+        return $this->$method($conditions, $options);
     }
 
+
+    /**
+     * Inserção ou Atualização de um item
+     *
+     * a atualização ocorre quando todas as chaves primárias são passadas
+     *
+     * @param mixed $data Conjunto de dados para salvamento
+     * @access public
+     * @return int número de itens afetados
+     */
+    public function save($data)
+    {
+        $update = true;
+        $keys = array();
+        foreach ($this->getPrimaryKey() as $key) {
+            if (!array_key_exists($key,$data)) {
+                $update = false;
+                break;
+            }
+            $keys[$key] = $data[$key];
+            unset($data[$key]);
+        }
+
+        if ($update) {
+            return $this->getTableGateway()->update($data, $keys);
+        } else {
+            return $this->getTableGateway()->insert(array_merge($data,$keys));
+        }
+    }
+
+    /**
+     * Remove um item
+     *
+     * @param mixed $conditions Condições da remoção
+     * @access public
+     * @return int
+     */
+    public function delete($conditions)
+    {
+        return $this->getTableGateway()->delete($conditions);
+    }
 
     /**
      * Define o gateway de tabela do banco de dados
@@ -201,6 +252,59 @@ class DBTable implements DataAccessInterface
         }
         return $this->adapter;
     }
+
+    /**
+     * Obtenção de conjunto de itens paginados
+     *
+     * @param mixed $conditions Condições de pesquisa
+     * @param array $options Opções de pesquisa (order, page, perPage,..._)
+     * @access protected
+     * @return \Zend\Paginator\Paginator
+     */
+    protected function paginatedItems($conditions, array $options)
+    {
+        $order = null;
+        if (array_key_exists('order',$options)) {
+            $order = $options['order'];
+        }
+
+        $tableGateway = $this->getTableGateway();
+
+        $adapter = new DbTableGateway($tableGateway,$conditions,$order);
+        $paginator = new Paginator($adapter);
+
+        if (array_key_exists('page', $options)) {
+            $paginator->setCurrentPageNumber((int)$options['page']);
+        }
+
+        if (array_key_exists('perPage', $options)) {
+            $paginator->setItemCountPerPage((int)$options['perPage']);
+        }
+        return $paginator;
+    }
+
+    /**
+     * Obtenção de registros não paginados
+     *
+     * @param mixed $conditions Condições de pesquisa
+     * @param array $options Opções de pesquisa
+     * @access protected
+     * @return \Zend\Db\ResultSet\ResultSet
+     */
+    protected function unpaginatedItems($conditions, array $options)
+    {
+        $function = function($select) use($conditions, $options) {
+            if (!empty($conditions)) {
+                $select->where($conditions);
+            }
+
+            if (array_key_exists('order', $options)) {
+                $select->order($options['order']);
+            }
+        };
+        return $this->getTableGateway()->select($function);
+    }
+
 
     /**
      * Realiza a criação de um gateway de tabela do banco de dados com base no nome da tabela definido em tempo de

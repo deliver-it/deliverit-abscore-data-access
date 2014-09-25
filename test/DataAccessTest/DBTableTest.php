@@ -7,6 +7,7 @@ use Zend\ServiceManager\Config as ServiceConfig;
 use Zend\Db\ResultSet\ResultSet;
 use Zend\Db\Adapter\Adapter;
 use PHPUnit_Framework_TestCase;
+use ReflectionClass;
 
 use ABSCore\DataAccess\DBTable;
 
@@ -152,6 +153,77 @@ class DBTableTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * Teste de busca de registros
+     *
+     * @access public
+     * @return null
+     */
+    public function testFetchAll()
+    {
+        $adapter = $this->getAdapterMock();
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+        $dbTable->setAdapter($adapter);
+        $data = $dbTable->fetchAll(array('id' => 1), array('page' => 1));
+        $this->assertInstanceOf('Zend\Paginator\Paginator',$data);
+    }
+
+    /**
+     * testOrdered
+     *
+     * @access public
+     * @return null
+     */
+    public function testOrderedFetchAll()
+    {
+        $select = $this->getMockBuilder('Zend\Db\Sql\Select')
+            ->disableOriginalConstructor()
+            ->getMock();
+        $select->expects($this->exactly(2))
+            ->method('order')
+            ->with('id ASC');
+
+        $sql = $this->getMockBuilder('Zend\Db\Sql\Sql')
+            ->disableOriginalConstructor()
+            ->getMock();
+        $sql->expects($this->exactly(2))
+            ->method('select')
+            ->will($this->returnValue($select));
+
+        $tableGateway = $this->getMock(
+            'Zend\Db\TableGateway\TableGateway', // className
+            array('initialize','executeSelect'), // methods that will maintan behavior
+            array(), // construct params
+            'TableGateway', // className of mocked object
+            false // enable real constructor
+        );
+
+        $reflectionClass = new ReflectionClass($tableGateway);
+        $property = $reflectionClass->getProperty('sql');
+        $property->setAccessible(true);
+        $property->setValue($tableGateway,$sql);
+
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+        $dbTable->setTableGateway($tableGateway);
+        $dbTable->fetchAll(null, array('order' => 'id ASC'));
+        $dbTable->fetchAll(null, array('paginated' => false, 'order' => 'id ASC'));
+    }
+
+    /**
+     * Teste para busca sem paginação
+     *
+     * @access public
+     * @return null
+     */
+    public function testUnpaginatedFetchAll()
+    {
+        $adapter = $this->getAdapterMock();
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+        $dbTable->setAdapter($adapter);
+        $data = $dbTable->fetchAll(array('id' => 1), array('paginated' => false));
+        $this->assertInstanceOf('Zend\Db\ResultSet\ResultSet',$data);
+    }
+
+    /**
      * Método auxiliar para obter um adaptador Mocado
      *
      * @access protected
@@ -183,6 +255,50 @@ class DBTableTest extends PHPUnit_Framework_TestCase
 
         return $adapter;
     }
+
+    /**
+     * Teste para salvamento de um novo resgistro
+     *
+     * @access public
+     * @return null
+     */
+    public function testSaveNewEntry()
+    {
+        $tableGateway = $this->getTableGatewayMock();
+        $tableGateway->expects($this->once())->method('insert')->will($this->returnValue(1));
+        $dbTable = new DBTable('table','id',$this->getServiceManager());
+        $dbTable->setTableGateway($tableGateway);
+        $result = $dbTable->save(array('name' => 'test'));
+        $this->assertEquals(1, $result);
+    }
+
+    /**
+     * Teste de atualização de um registro
+     *
+     * @access public
+     * @return null
+     */
+    public function testSaveUpdateEntry()
+    {
+        $tableGateway = $this->getTableGatewayMock();
+        $tableGateway->expects($this->once())->method('update')->will($this->returnValue(1))->with(array('name' => 'test'),array('id' => 1));
+        $dbTable = new DBTable('table','id',$this->getServiceManager());
+        $dbTable->setTableGateway($tableGateway);
+        $result = $dbTable->save(array('id' =>1, 'name' => 'test'));
+        $this->assertEquals(1, $result);
+    }
+
+
+    public function testDelete()
+    {
+        $tableGateway = $this->getTableGatewayMock();
+        $tableGateway->expects($this->once())->method('delete')->will($this->returnValue(1))->with(array('id' => 1));
+        $dbTable = new DBTable('table','id',$this->getServiceManager());
+        $dbTable->setTableGateway($tableGateway);
+        $result = $dbTable->delete(array('id' => 1));
+        $this->assertEquals(1, $result);
+    }
+
 
     /**
      * Obtenção de gerenciador de serviços
