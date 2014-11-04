@@ -71,6 +71,14 @@ class DBTable implements DataAccessInterface
     protected $adapter;
 
     /**
+     * Flag para identificar se a atualização de registro deve
+     *
+     * @var mixed
+     * @access protected
+     */
+    protected $updateOnlyIfExists = false;
+
+    /**
      * Contrutor da classe
      *
      * @param string $resource Nome do recurso(tabela no banco de dados)
@@ -103,6 +111,30 @@ class DBTable implements DataAccessInterface
             throw new Exception('registry not found');
         }
         return $row;
+    }
+
+    /**
+     * Define se deve atualizar um registro somente quando este já existir
+     *
+     * @param bool $flag
+     * @access public
+     * @return DBTable Próprio objeto para encadeamento
+     */
+    public function updateOnlyIfExists($flag)
+    {
+        $this->updateOnlyIfExists = (bool)$flag;
+        return $this;
+    }
+
+    /**
+     * Deve atualizar o registro quando somente quando existir?
+     *
+     * @access public
+     * @return bool
+     */
+    public function isUpdateOnlyIfExists()
+    {
+        return (bool)$this->updateOnlyIfExists;
     }
 
     /**
@@ -144,6 +176,14 @@ class DBTable implements DataAccessInterface
             }
             $keys[$key] = $data[$key];
             unset($data[$key]);
+        }
+
+        if ($update && $this->isUpdateOnlyIfExists()) {
+            try {
+                $this->find($keys);
+            } catch (Exception $e) {
+                $update = false;
+            }
         }
 
         if ($update) {

@@ -299,6 +299,32 @@ class DBTableTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(1, $result);
     }
 
+    public function testUpdateOnlyIfExistsAndExists()
+    {
+        $tableGateway = $this->getTableGatewayMock();
+        $tableGateway->expects($this->once())->method('update');
+        $resultSet = new ResultSet();
+        $resultSet->initialize(array(array('id' => 1)));
+        $tableGateway->expects($this->once())->method('select')->will($this->returnValue($resultSet));
+        $dbTable = new DBTable('table','id',$this->getServiceManager());
+        $dbTable->updateOnlyIfExists(true);
+        $dbTable->setTableGateway($tableGateway);
+        $dbTable->save(array('id' => 1));
+    }
+
+    public function testUpdateOnlyIfExistsAndNotExists()
+    {
+        $tableGateway = $this->getTableGatewayMock();
+        $tableGateway->expects($this->once())->method('insert')->will($this->returnValue(1))->with(array('id' => 1));
+        $resultSet = new ResultSet();
+        $resultSet->initialize(array());
+        $tableGateway->expects($this->once())->method('select')->will($this->returnValue($resultSet));
+        $dbTable = new DBTable('table','id',$this->getServiceManager());
+        $dbTable->updateOnlyIfExists(true);
+        $dbTable->setTableGateway($tableGateway);
+        $dbTable->save(array('id' => 1));
+    }
+
 
     /**
      * Obtenção de gerenciador de serviços
