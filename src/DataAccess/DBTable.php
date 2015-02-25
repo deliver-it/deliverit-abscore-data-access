@@ -79,6 +79,14 @@ class DBTable implements DataAccessInterface
     protected $updateOnlyIfExists = false;
 
     /**
+     * Flag para identificar se uma transação esta sendo executada
+     *
+     * @var bool
+     * @access protected
+     */
+    protected $startTrans = false;
+
+    /**
      * Contrutor da classe
      *
      * @param string $resource Nome do recurso(tabela no banco de dados)
@@ -488,6 +496,75 @@ class DBTable implements DataAccessInterface
         }
         $this->tableName = $name;
 
+        return $this;
+    }
+
+    /**
+     * Get DB Connection
+     *
+     * @access protected
+     * @return mixed
+     */
+    protected function getConnection()
+    {
+        return $this->getTableGateway()->getAdapter()->getDriver()->getConnection();
+    }
+
+    /**
+     * Inicia uma transação se não estiver executando outra
+     *
+     * @access public
+     * @return DBTable Próprio objeto para encadeamento
+     */
+    public function beginTransaction()
+    {
+        $connection =  $this->getConnection();
+        if (!$connection->inTransaction()) {
+            $connection->beginTransaction();
+            $this->startTrans = true;
+        } else {
+            $this->startTrans = false;
+        }
+        return $this;
+    }
+
+    /**
+     * Uma transação esta sendo executada para este DBTable?
+     *
+     * @access public
+     * @return bool
+     */
+    public function inTransaction()
+    {
+        return $this->startTrans;
+    }
+
+    /**
+     * Commita a transação de Banco se uma estiver aberta para este DBTable
+     *
+     * @access public
+     * @return DBTable Próprio objeto para encadeamento
+     */
+    public function commit()
+    {
+        if ($this->inTransaction()) {
+            $this->getConnection()->commit();
+            $this->startTrans = false;
+        }
+    }
+
+    /**
+     * Desfaz a transação de Banco se uma estiver aberta para este DBTable
+     *
+     * @access public
+     * @return DBTable Próprio objeto para encadeamento
+     */
+    public function rollback()
+    {
+        if ($this->inTransaction()) {
+            $this->getConnection()->rollback();
+            $this->startTrans = false;
+        }
         return $this;
     }
 }
