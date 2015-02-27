@@ -10,7 +10,6 @@ use Zend\Db\Adapter\AdapterInterface;
 use Zend\Paginator\Adapter\DbTableGateway;
 use Zend\Paginator\Paginator;
 use Zend\Filter\Word\SeparatorToCamelCase;
-use Exception;
 use ArrayObject;
 
 /**
@@ -104,7 +103,7 @@ class DBTable implements DataAccessInterface
     /**
      * Método para busca de registro único
      *
-     * @throws \Exception Quando o registro não é encontrado
+     * @throws \Exception\UnknowRegistryException Quando o registro não é encontrado
      * @param mixed $primaryKey Chave(s) primária(s)
      * @access public
      * @return mixed Registro encontrado
@@ -115,8 +114,7 @@ class DBTable implements DataAccessInterface
         $rowset = $this->getTableGateway()->select($condition);
         $row = $rowset->current();
         if (!$row) {
-            //@TODO change exception type
-            throw new Exception('registry not found');
+            throw new Exception\UnknowRegistryException('registry not found');
         }
         return $row;
     }
@@ -189,7 +187,7 @@ class DBTable implements DataAccessInterface
         if ($update && $this->isUpdateOnlyIfExists()) {
             try {
                 $this->find($keys);
-            } catch (Exception $e) {
+            } catch (Exception\UnknowRegistryException $e) {
                 $update = false;
             }
         }
@@ -296,7 +294,7 @@ class DBTable implements DataAccessInterface
     public function getAdapter()
     {
         if (is_null($this->adapter)) {
-            throw new Exception('An adapter is required!');
+            throw new \Exception('An adapter is required!');
         }
         return $this->adapter;
     }
@@ -399,7 +397,7 @@ class DBTable implements DataAccessInterface
     /**
      * Construção de condições para a busca de um único registro
      *
-     * @throws Exception para quando uma chave é inválida
+     * @throws \Exception para quando uma chave é inválida
      * @param mixed $primaryKey
      * @access protected
      * @return array
@@ -422,7 +420,7 @@ class DBTable implements DataAccessInterface
                 // a chave passada não faz parte do conjunto de chaves da tabela?
                 if (!in_array($key, $keys)) {
                     $message = sprintf('The key "%s" is not a valid primary key (%s)',$key,implode(',',$keys));
-                    throw new Exception($message);
+                    throw new \Exception($message);
                 }
 
                 $conditions[$key] = $value;
@@ -453,7 +451,7 @@ class DBTable implements DataAccessInterface
 
         if ($passed != $primaryCount) {
             $message = sprintf('%d keys are expected but %d was passed', $primaryCount, $passed);
-            throw new Exception($message);
+            throw new \Exception($message);
         }
 
         return $this;
@@ -470,7 +468,7 @@ class DBTable implements DataAccessInterface
     protected function setPrimaryKey($primaryKey)
     {
         if (empty($primaryKey)) {
-            throw new Exception('At last one primary key must be passed!');
+            throw new \Exception('At last one primary key must be passed!');
         }
 
         if (!is_array($primaryKey)) {
@@ -492,7 +490,7 @@ class DBTable implements DataAccessInterface
     {
         $name = (string)$name;
         if (empty($name)) {
-            throw new Exception('The table name cannot be blank!');
+            throw new \Exception('The table name cannot be blank!');
         }
         $this->tableName = $name;
 

@@ -60,7 +60,7 @@ class DBTableTest extends PHPUnit_Framework_TestCase
      */
     public function testFindWithoutResult()
     {
-        $this->setExpectedException('Exception','registry not found');
+        $this->setExpectedException('ABSCore\DataAccess\Exception\UnknowRegistryException','registry not found');
         $dbTable = new DBTable('teste','id', $this->getServiceManager());
         $result = new ResultSet();
         $result->initialize(array());
