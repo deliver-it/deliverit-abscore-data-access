@@ -66,7 +66,7 @@ class DBQuery
     public function __construct(DBTable $tableFrom, $columns, $service)
     {
         $this->from = array('table' => $tableFrom, 'columns' => $columns);
-        $this->addNode($tableFrom, $columns);
+        $this->addNode($tableFrom, $tableFrom->getTableName(), $columns);
         $this->setServiceLocator($service);
     }
 
@@ -98,7 +98,7 @@ class DBQuery
             // get initial select
             $select = $this->from['table']->getTableGateway()->getSql()->select();
             // normalize columns names of from table
-            $columns = $this->normalizeColumns($this->from['table'], $this->from['columns']);
+            $columns = $this->normalizeColumns($this->from['table']->getTableName(), $this->from['columns']);
             // define columns
             $select->columns($columns);
             // loop to add joins
@@ -118,11 +118,11 @@ class DBQuery
      * Add a where conditions
      *
      * @param array|string $conditions
-     * @param DBTable|null $table
+     * @param string|DBTable|null $table
      * @access public
      * @return null
      */
-    public function addWhereConditions($conditions, DBTable $table = null)
+    public function addWhereConditions($conditions, $table = null)
     {
         if (is_null($table)) {
             if (is_array($conditions)) {
@@ -134,8 +134,12 @@ class DBQuery
             if (!is_array($conditions)) {
                 $conditions = array((string)$conditions);
             }
+            $alias = $table;
+            if ($table instanceof DBTable) {
+                $alias = $table->getTableName();
+            }
             foreach ($conditions as $condition) {
-                $condition = str_replace('$1', $table->getTableName(), $condition);
+                $condition = str_replace('$1', $alias, $condition);
                 $this->where[] = $condition;
             }
         }
@@ -159,20 +163,43 @@ class DBQuery
      *
      * If old table not exists then a RuntimeException is thrown
      *
-     * @param DBTable $a         New Table
-     * @param DBTable $b         Old Table
+     * @param array|DBTable $a         New Table
+     * @param string|DBTable $b         Old Table
      * @param string $conditions Conditions of join
      * @param array $columns     Columns of new table
      * @param string $type       Type of join (default is INNER)
      * @access public
      * @return DBquery
      */
-    public function join(DBTable $a, DBTable $b, $conditions, array $columns, $type = 'inner')
+    public function join($a, $b, $conditions, array $columns, $type = 'inner')
     {
-        if (!$this->addNode($a, $columns, $b)) {
-            throw new \RuntimeException('The table '. $b->getTableName().' was not identified');
+        if (is_array($a)) {
+            $alias = current(array_keys($a));
+            $table = current($a);
+        } else {
+            $alias = null;
+            $table = $a;
         }
-        $this->joins[] = array('table' => $a, 'related' => $b, 'columns' => $columns, 'conditions' => $conditions, 'type' => $type);
+
+        if (!($table instanceof DBTable)) {
+            throw new \RuntimeException('Table must be a instance of DBTable');
+        }
+
+        if (is_null($alias)) {
+            $alias = $table->getTableName();
+        }
+
+        if ($b instanceof DBTable) {
+            $aliasOld = $b->getTableName();
+        } else {
+            $aliasOld = (string)$b;
+        }
+
+        if (!$this->addNode($table, $alias, $columns, $aliasOld)) {
+            throw new \RuntimeException('The table '. $aliasOld.' was not identified');
+        }
+
+        $this->joins[] = array('table' => $table, 'alias' => $alias, 'related' => $b, 'columns' => $columns, 'conditions' => $conditions, 'type' => $type);
 
 
         return $this;
@@ -181,13 +208,13 @@ class DBQuery
     /**
      * Get prefix name of Table
      *
-     * @param DBTable $table
+     * @param string $alias
      * @access public
      * @return string
      */
-    public function getPrefix(DBTable $table)
+    public function getPrefix($alias)
     {
-        return $table->getTableName().'_';
+        return $alias.'_';
     }
 
 
@@ -195,23 +222,24 @@ class DBQuery
      * Add a node to join tree as a child of old node, if "$old" is null then "$new" will be considered root node
      *
      * @param DBTable $new   New node to add into tree
+     * @param string $alias  Alias of new node
      * @param array $columns Columns of node added
-     * @param DBTable $old   Node where new node must be inserted
+     * @param string $old   Node where new node must be inserted
      * @access protected
      * @return boolean True if is able to insert new node | False otherwise
      */
-    protected function addNode(DBTable $new, array $columns, DBTable $old = null)
+    protected function addNode(DBTable $new, $alias, array $columns, $old = null)
     {
         if ($old == null && empty($this->tree)) {
-            $this->tree['root'][$new->getTableName()] = array(
+            $this->tree['root'][$alias] = array(
                 'node' => $new,
+                'alias' => $alias,
                 'children' => array(),
                 'columns' => $columns,
             );
             $result = true;
         } else {
-            $index = $old->getTableName();
-            $result = $this->addSubNode($index, $new, $this->tree['root'], $columns);
+            $result = $this->addSubNode($old, $new, $alias, $this->tree['root'], $columns);
         }
         return $result;
     }
@@ -221,23 +249,25 @@ class DBQuery
      *
      * @param string $index   Index of searched node
      * @param DBTable $new    New table to be inserted
+     * @param string $alias   Alias of new node
      * @param array $node     Actual node
      * @param array $columns  Set of collumns of new table
      * @access protected
      * @return boolean True if is able to insert new node | False otherwise
      */
-    protected function addSubNode($index, DBTable $new, &$node, $columns)
+    protected function addSubNode($index, DBTable $new, $alias, &$node, $columns)
     {
         foreach ($node as $key => &$child) {
             if ($key === $index) {
-                $child['children'][$new->getTableName()] = array(
+                $child['children'][$alias] = array(
                     'node' => $new,
+                    'alias' => $alias,
                     'children' => array(),
                     'columns' => $columns,
                 );
                 return true;
             } else {
-                if ($this->addSubNode($index, $new, $child['children'], $columns)) {
+                if ($this->addSubNode($index, $new, $alias, $child['children'], $columns)) {
                     return true;
                 }
             }
@@ -257,14 +287,14 @@ class DBQuery
     protected function createJoin($select, $join)
     {
         $cols = array_unique(array_merge($join['columns'], $join['table']->getPrimaryKey()));
-        $cols = $this->normalizeColumns($join['table'], $cols);
+        $cols = $this->normalizeColumns($join['alias'], $cols);
         $conditions = str_replace(
             array('$1', '$2'),
-            array($join['table']->getTableName(), $join['related']->getTableName()),
+            array($join['alias'], $join['related']->getTableName()),
             $join['conditions']
         );
         $name = $join['table']->getTableName();
-        $select->join(array($name => $name), $conditions, $cols, $join['type']);
+        $select->join(array($join['alias'] => $name), $conditions, $cols, $join['type']);
         return $this;
     }
 
@@ -292,7 +322,7 @@ class DBQuery
         $result = array();
 
         // table prefix name
-        $prefixName = $this->getPrefix($node['node']);
+        $prefixName = $this->getPrefix($name);
 
         // set of all urrent conditions
         $allConditions = array();
@@ -380,14 +410,14 @@ class DBQuery
      *
      * The passed columns name are perfixed by table prefix
      *
-     * @param DBTable $table Table
+     * @param string $alias Table alias
      * @param array $columns Set of table columns
      * @access protected
      * @return array Normalized Columns
      */
-    protected function normalizeColumns(DBTable $table, $columns)
+    protected function normalizeColumns($alias, $columns)
     {
-        $identifier = $this->getPrefix($table);
+        $identifier = $this->getPrefix($alias);
         $result = array();
         foreach ($columns as $key => $value)
         {
