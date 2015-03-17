@@ -19,6 +19,8 @@
         "zendframework/zend-mvc": "2.3.*",
         "zendframework/zend-stdlib": "2.3.*",
         "phpunit/phpunit": "4.2.*",
-        "fiunchinho/phpunit-randomizer":"2.0.*"
+        "fiunchinho/phpunit-randomizer":"2.0.*",
+        "phpdocumentor/phpdocumentor": "2.*",
+        "evert/phpdoc-md" : "~0.0.7"
     }
 }

@@ -18,8 +18,7 @@ use ArrayObject;
  * Esta implementação abstrai única e exclusivamente uma tabela
  *
  * @uses DataAccessInterface
- * @category ABSCore
- * @package DataAccess
+ * @author Luiz Cunha <luiz.felipe@absoluta.net>
  */
 class DBTable implements DataAccessInterface
 {
