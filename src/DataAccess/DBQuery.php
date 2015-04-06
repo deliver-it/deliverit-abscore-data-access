@@ -48,6 +48,14 @@ class DBQuery
     protected $joins = array();
 
     /**
+     * Set of conditions to filter
+     *
+     * @var array
+     * @access protected
+     */
+    protected $where = array();
+
+    /**
      * Tree of joins to parse information into result tree
      *
      * @var array
@@ -371,7 +379,7 @@ class DBQuery
             // make identifier of this element
             $identifier = $this->makeIdentifier($localConditions);
             // was element inserted?
-            if (empty($result[$identifier])) {
+            if (empty($result[$identifier]) && !empty($identifier)) {
                 $allConditions[] = $localConditions;
                 $result[$identifier] = $info;
             }
@@ -385,11 +393,11 @@ class DBQuery
                 // new conditions was passed conditions plus current conditions
                 $newConditions = array_merge($conditions, $localConditions);
 
-                $result[$identifier][$name] = $this->parse($data, $child, $name, $newConditions);
+                $result[$identifier][$name] = array_values($this->parse($data, $child, $name, $newConditions));
             }
         }
 
-        return $result;
+        return array_values($result);
     }
 
     /**
