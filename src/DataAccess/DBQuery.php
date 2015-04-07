@@ -79,6 +79,17 @@ class DBQuery
     }
 
     /**
+     * Get the from table
+     *
+     * @access public
+     * @return DBTable
+     */
+    public function getFromTable()
+    {
+        return $this->from['table'];
+    }
+
+    /**
      * Fetch results
      *
      * @access public
