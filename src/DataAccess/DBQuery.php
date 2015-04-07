@@ -3,6 +3,7 @@
 namespace ABSCore\DataAccess;
 
 use Zend\ServiceManager\ServiceLocatorAwareTrait;
+use Zend\Db\ResultSet\ResultSet;
 
 /**
  * Class to make complex queries over DBTable objects
@@ -64,6 +65,14 @@ class DBQuery
     protected $tree = array();
 
     /**
+     * Array Object Prototype
+     *
+     * @var mixed
+     * @access protected
+     */
+    protected $arrayObjectPrototype = null;
+
+    /**
      * Class constructor
      *
      * @param DBTable $tableFrom Table from
@@ -93,7 +102,7 @@ class DBQuery
      * Fetch results
      *
      * @access public
-     * @return array Result
+     * @return ResultSet
      */
     public function fetch()
     {
@@ -101,7 +110,27 @@ class DBQuery
         $data = $this->from['table']->getTableGateway()->selectWith($select);
         // reset select
         $this->select = null;
-        return $this->parse($data->toArray());
+        $data = $this->parse($data->toArray());
+        $result = new ResultSet();
+        if (!is_null($this->arrayObjectPrototype)) {
+            $result->setArrayObjectPrototype($this->arrayObjectPrototype);
+        }
+        $result->initialize($data);
+        return $result;
+    }
+
+
+    /**
+     * Set an array object prototype to use into result
+     *
+     * @param mixed $object
+     * @access public
+     * @return null
+     */
+    public function setArrayObjectPrototype($object)
+    {
+        $this->arrayObjectPrototype = $object;
+        return $this;
     }
 
     /**
