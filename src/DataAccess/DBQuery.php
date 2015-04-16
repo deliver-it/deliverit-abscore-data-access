@@ -146,7 +146,8 @@ class DBQuery
             // get initial select
             $select = $this->from['table']->getTableGateway()->getSql()->select();
             // normalize columns names of from table
-            $columns = $this->normalizeColumns($this->from['table']->getTableName(), $this->from['columns']);
+            $cols = array_merge($this->from['columns'], $this->from['table']->getPrimaryKey());
+            $columns = $this->normalizeColumns($this->from['table']->getTableName(), $cols);
             // define columns
             $select->columns($columns);
             // loop to add joins
