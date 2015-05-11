@@ -146,7 +146,12 @@ class DBQuery
             // get initial select
             $select = $this->from['table']->getTableGateway()->getSql()->select();
             // normalize columns names of from table
-            $cols = array_merge($this->from['columns'], $this->from['table']->getPrimaryKey());
+            $cols = $this->from['columns'];
+            foreach ($this->from['table']->getPrimaryKey() as $col) {
+                if (!in_array($col, $cols)) {
+                    $cols[] = $col;
+                }
+            }
             $columns = $this->normalizeColumns($this->from['table']->getTableName(), $cols);
             // define columns
             $select->columns($columns);
@@ -335,7 +340,12 @@ class DBQuery
      */
     protected function createJoin($select, $join)
     {
-        $cols = array_unique(array_merge($join['columns'], $join['table']->getPrimaryKey()));
+        $cols = $join['columns'];
+        foreach ($join['table']->getPrimaryKey() as $col) {
+            if (!in_array($col, $cols)) {
+                $cols[] = $col;
+            }
+        }
         $cols = $this->normalizeColumns($join['alias'], $cols);
         $conditions = str_replace(
             array('$1', '$2'),
@@ -412,7 +422,7 @@ class DBQuery
                         $localConditions[$column_name] = $value;
                     }
                     // is this column a requested column?
-                    if (in_array($realName, $node['columns'])) {
+                    if (in_array($realName, $node['columns']) || in_array($realName, array_keys($node['columns']))) {
                         $info[$realName] = $value;
                     }
                 }
@@ -470,7 +480,11 @@ class DBQuery
         $result = array();
         foreach ($columns as $key => $value)
         {
-            $key = $identifier . $value;
+            if (is_string($value)) {
+                $key = $identifier . $value;
+            } else {
+                $key = $identifier . $key;
+            }
             $result[$key] = $value;
         }
         return $result;
