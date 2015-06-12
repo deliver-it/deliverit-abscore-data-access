@@ -79,7 +79,6 @@ class Ldap implements DataAccessInterface
             'sizelimit' => 1
         ]);
 
-        var_dump($results);
         return $results->getFirst();
     }
 
