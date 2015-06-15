@@ -13,6 +13,7 @@ class Ldap implements AdapterInterface
     protected $ldap;
     protected $filter;
     protected $attributes;
+    protected $resultSet;
 
     /**
      * Class Constructor
@@ -25,6 +26,26 @@ class Ldap implements AdapterInterface
         $this->ldap = $ldap;
         $this->filter = $filter;
         $this->attributes = $attributes;
+    }
+
+    public function setArrayObjectPrototype($prototype)
+    {
+        $this->getResultSet()->setArrayObjectPrototype($prototype);
+        return $this;
+    }
+
+    public function setResultSet(ResultSet $resultSet)
+    {
+        $this->resultSet = $resultSet;
+        return $this;
+    }
+
+    public function getResultSet()
+    {
+        if (!$this->resultSet) {
+            $this->resultSet = new ResultSet();
+        }
+        return $this->resultSet;
     }
 
     /**
@@ -45,7 +66,7 @@ class Ldap implements AdapterInterface
 
         $resultArray = $result->toArray();
 
-        $result = new ResultSet();
+        $result = $this->getResultSet();
         $result->initialize(array_slice($resultArray, $offset));
 
         return $result;

@@ -5,6 +5,7 @@ namespace ABSCore\DataAccess;
 use Zend\Ldap as ZendLdap;
 use Zend\Paginator\Paginator as ZendPaginator;
 use Zend\DB\ResultSet\ResultSet;
+use ArrayObject;
 
 use ABSCore\DataAccess\Paginator\Adapter\Ldap as LdapPaginator;
 
@@ -14,6 +15,7 @@ class Ldap implements DataAccessInterface
     protected $attributes = [];
     protected $primaryKey;
     protected $objectClass;
+    protected $prototype;
 
     public function __construct(ZendLdap\Ldap $ldap, $objectClass, $primaryKey)
     {
@@ -65,6 +67,22 @@ class Ldap implements DataAccessInterface
         return $this->primaryKey;
     }
 
+    public function setArrayObjectPrototype($prototype)
+    {
+        $this->prototype = $prototype;
+        return $this;
+    }
+
+    public function getArrayObjectPrototype()
+    {
+        if ($this->prototype) {
+            $prototype = clone $this->prototype;
+        } else {
+            $prototype = new ArrayObject();
+        }
+        return $prototype;
+    }
+
     public function find($id)
     {
         $primaryKey = $this->getPrimaryKey();
@@ -76,10 +94,13 @@ class Ldap implements DataAccessInterface
                   ->addAnd(ZendLdap\Filter::equals($primaryKey, $id));
         $results = $ldap->search([
             'filter' => $filter,
-            'sizelimit' => 1
+            'sizelimit' => 1,
+            'attributes' => $this->getAttributes()
         ]);
+        $object = $this->getArrayObjectPrototype();
+        $object->exchangeArray($results->getFirst());
 
-        return $results->getFirst();
+        return $object;
     }
 
     protected function makeFilterByConditions(array $conditions)
@@ -132,9 +153,11 @@ class Ldap implements DataAccessInterface
             ]);
 
             $result = new ResultSet();
+            $result->setArrayObjectPrototype($this->getArrayObjectPrototype());
             $result->initialize($entries);
         } else {
             $adapter = new LdapPaginator($this->getLdap(), $filter, $attributes);
+            $adapter->setArrayObjectPrototype($this->getArrayObjectPrototype());
             $paginator = new \Zend\Paginator\Paginator($adapter);
             if (array_key_exists('page', $options)) {
                 $paginator->setCurrentPageNumber((int)$options['page']);
