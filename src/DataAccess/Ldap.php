@@ -98,6 +98,11 @@ class Ldap implements DataAccessInterface
             'attributes' => $this->getAttributes()
         ]);
         $object = $this->getArrayObjectPrototype();
+
+        if (is_null($results->getFirst())) {
+            throw new Exception\UnknowRegistryException();
+        }
+
         $object->exchangeArray($results->getFirst());
 
         return $object;
@@ -145,6 +150,9 @@ class Ldap implements DataAccessInterface
             $filter = $filter->addAnd($conditionsFilter);
         }
         $attributes = $this->getAttributes();
+        if (array_key_exists('attributes', $options)) {
+            $attributes = $options['attributes'];
+        }
         $ldap = $this->getLdap();
         if (!array_key_exists('paginated', $options) || !$options['paginated']) {
             $entries = $ldap->searchEntries([
