@@ -2,8 +2,6 @@
 
 namespace ABSCore\DataAccess;
 
-use Zend\ServiceManager\ServiceLocatorInterface;
-
 /**
  * DataAccessInterface
  *
@@ -11,15 +9,6 @@ use Zend\ServiceManager\ServiceLocatorInterface;
  */
 interface DataAccessInterface
 {
-    /**
-     * Class Constructor
-     *
-     * @param string $resource                 Resource name
-     * @param string|array $primaryKey         Primary keys
-     * @param ServiceLocatorInterface $service Service locator
-     * @access public
-     */
-    public function __construct($resource, $primaryKey, ServiceLocatorInterface $service);
     /**
      * Find a entry by primary keys
      *
@@ -30,7 +19,7 @@ interface DataAccessInterface
     public function find($primaryKey);
 
     /**
-     * Fecth a set of entries
+     * Fetch a set of entries
      *
      * @param mixed $conditions Set of conditions
      * @param array $options    Set of options
