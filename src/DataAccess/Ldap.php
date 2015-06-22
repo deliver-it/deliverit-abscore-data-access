@@ -9,14 +9,56 @@ use ArrayObject;
 
 use ABSCore\DataAccess\Paginator\Adapter\Ldap as LdapPaginator;
 
+/**
+ * Ldap
+ *
+ * @uses DataAccessInterface
+ */
 class Ldap implements DataAccessInterface
 {
+    /**
+     * ldap
+     *
+     * @var Zend\Ldap\Ldap
+     */
     protected $ldap;
+
+    /**
+     * attributes
+     *
+     * @var array
+     */
     protected $attributes = [];
+
+    /**
+     * primaryKey
+     *
+     * @var mixed
+     */
     protected $primaryKey;
+
+    /**
+     * objectClass
+     *
+     * @var mixed
+     */
     protected $objectClass;
+
+    /**
+     * prototype
+     *
+     * @var mixed
+     */
     protected $prototype;
 
+    /**
+     * Object construction
+     *
+     * @param Zend\Ldap\Ldap $ldap
+     * @param mixed $objectClass
+     * @param mixed $primaryKey
+     * @return void
+     */
     public function __construct(ZendLdap\Ldap $ldap, $objectClass, $primaryKey)
     {
         $this->setLdap($ldap)
@@ -24,55 +66,110 @@ class Ldap implements DataAccessInterface
              ->setPrimaryKey($primaryKey);
     }
 
+    /**
+     * setObjectClass
+     *
+     * @param mixed $objectClass
+     * @return void
+     */
     public function setObjectClass($objectClass)
     {
         $this->objectClass = (string) $objectClass;
         return $this;
     }
 
+    /**
+     * getObjectClass
+     *
+     * @return void
+     */
     public function getObjectClass()
     {
         return (string) $this->objectClass;
     }
 
+    /**
+     * setLdap
+     *
+     * @param ZendLdap\Ldap $ldap
+     * @return void
+     */
     public function setLdap(ZendLdap\Ldap $ldap)
     {
         $this->ldap = $ldap;
         return $this;
     }
 
+    /**
+     * getLdap
+     *
+     * @return void
+     */
     public function getLdap()
     {
         return $this->ldap;
     }
 
+    /**
+     * setAttributes
+     *
+     * @param array $attributes
+     * @return void
+     */
     public function setAttributes(array $attributes)
     {
         $this->attributes = $attributes;
     }
 
+    /**
+     * getAttributes
+     *
+     * @return void
+     */
     public function getAttributes()
     {
         return $this->attributes;
     }
 
+    /**
+     * setPrimaryKey
+     *
+     * @param mixed $primaryKey
+     * @return void
+     */
     public function setPrimaryKey($primaryKey)
     {
         $this->primaryKey = $primaryKey;
         return $this;
     }
 
+    /**
+     * getPrimaryKey
+     *
+     * @return void
+     */
     public function getPrimaryKey()
     {
         return $this->primaryKey;
     }
 
+    /**
+     * setArrayObjectPrototype
+     *
+     * @param mixed $prototype
+     * @return void
+     */
     public function setArrayObjectPrototype($prototype)
     {
         $this->prototype = $prototype;
         return $this;
     }
 
+    /**
+     * getArrayObjectPrototype
+     *
+     * @return void
+     */
     public function getArrayObjectPrototype()
     {
         if ($this->prototype) {
@@ -83,6 +180,12 @@ class Ldap implements DataAccessInterface
         return $prototype;
     }
 
+    /**
+     * Find an entry by id in Ldap server
+     *
+     * @param mixed $id
+     * @return ArrayObject
+     */
     public function find($id)
     {
         $primaryKey = $this->getPrimaryKey();
@@ -108,6 +211,12 @@ class Ldap implements DataAccessInterface
         return $object;
     }
 
+    /**
+     * Make filters combinations by conditions
+     *
+     * @param array $conditions
+     * @return mixed
+     */
     protected function makeFilterByConditions(array $conditions)
     {
         if (empty($conditions)) {
@@ -135,7 +244,15 @@ class Ldap implements DataAccessInterface
         return $filter;
     }
 
-    public function fetchAll($conditions = null, array $options = array()) {
+    /**
+     * Retrieve data from Ldap server based on conditions and options
+     *
+     * @param mixed $conditions
+     * @param array $options
+     * @return Zend\DB\ResultSet\ResultSet | Zend\Paginator\Paginator
+     */
+    public function fetchAll($conditions = null, array $options = [])
+    {
         $result = null;
         $conditionsFilter = null;
         $filter = ZendLdap\Filter::equals('objectClass', $this->getObjectClass());
@@ -178,8 +295,20 @@ class Ldap implements DataAccessInterface
         return $result;
     }
 
-    public function save($data) { }
+    /**
+     * Save an entry in Ldap server
+     *
+     * @param array $data
+     */
+    public function save($data) {
+        throw new Exception('Not implemented.');
+    }
 
+    /**
+     * Delete an entry in Ldap server
+     *
+     * @param array $conditions
+     */
     public function delete($conditions)
     {
         throw new Exception('Not implemented.');
