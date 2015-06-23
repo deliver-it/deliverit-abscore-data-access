@@ -181,7 +181,7 @@ class Ldap implements AdapterInterface
         $result = $this->getResultSet();
         $result->initialize(array_slice($resultArray, $offset));
 
-        return $result;
+        return iterator_to_array($result);
     }
 
     /**
