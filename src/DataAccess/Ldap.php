@@ -52,6 +52,13 @@ class Ldap implements DataAccessInterface
     protected $prototype;
 
     /**
+     * defaultFilters
+     *
+     * @var Zend\Ldap\Filter\AbstractLogicalFilter
+     */
+    protected $defaultFilters;
+
+    /**
      * Object construction
      *
      * @param Zend\Ldap\Ldap $ldap
@@ -64,6 +71,27 @@ class Ldap implements DataAccessInterface
         $this->setLdap($ldap)
              ->setObjectClass($objectClass)
              ->setPrimaryKey($primaryKey);
+    }
+
+    /**
+     * setFilters
+     *
+     * @param Zend\Ldap\Filter\AbstractLogicalFilter $filters
+     * @return void
+     */
+    public function setDefaultFilters(ZendLdap\Filter\AbstractLogicalFilter $defaultFilters)
+    {
+        $this->defaultFilters = $defaultFilters;
+    }
+
+    /**
+     * getDefaultFilters
+     *
+     * @return Zend\Ldap\Filter\AbstractLogicalFilter
+     */
+    public function getDefaultFilters()
+    {
+        return $this->defaultFilters;
     }
 
     /**
@@ -195,6 +223,10 @@ class Ldap implements DataAccessInterface
         $ldap = $this->getLdap();
         $filter = ZendLdap\Filter::equals('objectClass', $this->getObjectClass())
                   ->addAnd(ZendLdap\Filter::equals($primaryKey, $id));
+        $defaultFilters = $this->getDefaultFilters();
+        if (!is_null($defaultFilters)) {
+            $filter = $filter->addAnd($defaultFilters);
+        }
         $results = $ldap->search([
             'filter' => $filter,
             'sizelimit' => 1,
@@ -256,6 +288,10 @@ class Ldap implements DataAccessInterface
         $result = null;
         $conditionsFilter = null;
         $filter = ZendLdap\Filter::equals('objectClass', $this->getObjectClass());
+        $defaultFilters = $this->getDefaultFilters();
+        if (!is_null($defaultFilters)) {
+            $filter = $filter->addAnd($defaultFilters);
+        }
         if (!is_null($conditions)) {
             if (is_object($conditions) && $conditions instanceof ZendLdap\Filter\AbstractFilter) {
                 $conditionsFilter = $conditions;
