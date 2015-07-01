@@ -24,11 +24,6 @@ class DBTable implements DataAccessInterface
 {
 
     /**
-     * Constante que determina o sufixo para o protótipo customizado
-     */
-    const PROTOTYPE_SUFFIX = 'Prototype';
-
-    /**
      * Gerenciador de serviços
      *
      * @var \Zend\ServiceManager\ServiceLocatorInterface
@@ -83,6 +78,15 @@ class DBTable implements DataAccessInterface
      * @access protected
      */
     protected $startTrans = false;
+
+
+    /**
+     * Prototype
+     *
+     * @var mixed
+     * @access protected
+     */
+    protected $prototype;
 
     /**
      * Contrutor da classe
@@ -374,23 +378,26 @@ class DBTable implements DataAccessInterface
      * @access protected
      * @return mixed
      */
-    protected function getPrototype()
+    public function getPrototype()
     {
-        $table = $this->getTableName();
-        // montagem do nome do protótipo customizado
-        $filter = new SeparatorToCamelCase();
-        $prototypeName = $filter->filter($table).self::PROTOTYPE_SUFFIX;
-        $serviceLocator = $this->getServiceLocator();
+        if (is_null($this->prototype)) {
+            $this->setPrototype(new ArrayObject());
+        }
+        return $this->prototype;
+    }
 
-        // existe um serviço para o protótipo?
-        if ($serviceLocator->has($prototypeName)) {
-            $prototype = $serviceLocator->get($prototypeName);
-        // definição de um protótipo default
-        } else {
-            $prototype = new ArrayObject();
+    public function setPrototype($object)
+    {
+        if (!is_object($object)) {
+            throw new \Exception('Prototype must be an object');
         }
 
-        return $prototype;
+        if (!method_exists($object, 'exchangeArray')) {
+            throw new \Exception('Prototype must implement exchangeArray method');
+        }
+
+        $this->prototype = $object;
+        return $this;
     }
 
     /**
