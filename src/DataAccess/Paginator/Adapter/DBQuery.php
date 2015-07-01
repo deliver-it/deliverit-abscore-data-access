@@ -35,37 +35,39 @@ class DBQuery implements AdapterInterface
         $table = $query->getFromTable();
 
         // clone Select to get IDS to filter
-        $select = clone $query->getSelect();
+        $internalSelect = clone $query->getSelect();
 
         // remove JOINS COLUMNS
-        $joins = $select->getRawState($select::JOINS);
-        $select->reset($select::JOINS);
+        $joins = $internalSelect->getRawState($internalSelect::JOINS);
+        $internalSelect->reset($internalSelect::JOINS);
         $ids = $table->getPrimaryKey();
         foreach ($joins as $join) {
-            $select->join($join['name'], $join['on'], array(), $join['type']);
+            $internalSelect->join($join['name'], $join['on'], array(), $join['type']);
         }
 
         // get IDS
-        $select
-            ->columns($ids)
-            ->quantifier(Sql\Select::QUANTIFIER_DISTINCT);
+        $internalSelect->columns($ids);
 
         $joinConditions = [];
         foreach ($ids as $id) {
             $joinConditions[] = "t.$id = s.$id";
         }
 
+        $distinctSelect = new Sql\Select();
+        $distinctSelect
+            ->from(['internalSelect' => $internalSelect])
+            ->quantifier(Sql\Select::QUANTIFIER_DISTINCT);
 
-        $select2 = new Sql\Select();
-        $select2
+        $adapter = $table->getTableGateway()->getAdapter();
+        $select = new Sql\Select();
+        $select
             ->columns($ids)
-            ->from(['t' => $table->getTableName()])
-            ->join(['s' => $select], implode(' AND ', $joinConditions), [])
+            ->from(['distinctSelect' => $distinctSelect])
             ->limit($itemCountPerPage)
             ->offset($offset);
-        $adapter = $table->getTableGateway()->getAdapter();
+
         $sql = new Sql\Sql($adapter);
-        $statement = $sql->prepareStatementForSqlObject($select2);
+        $statement = $sql->prepareStatementForSqlObject($select);
         $result = $statement->execute();
 
         // make conditions
