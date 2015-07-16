@@ -72,6 +72,9 @@ class DBQuery
      */
     protected $arrayObjectPrototype = null;
 
+
+    protected $prefixes = [];
+
     /**
      * Class constructor
      *
@@ -268,7 +271,12 @@ class DBQuery
      */
     public function getPrefix($alias)
     {
-        return $alias.'_';
+        $key = array_search($alias, $this->prefixes);
+        if ($key === false) {
+            $key = count($this->prefixes);
+            $this->prefixes[] = $alias;
+        }
+        return "t{$key}_";
     }
 
 
