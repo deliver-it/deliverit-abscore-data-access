@@ -144,12 +144,29 @@ class DBTableTest extends PHPUnit_Framework_TestCase
         $result->expects($this->once())->method('exchangeArray');
 
         $service = $this->getServiceManager();
-        $service->setService('TestePrototype',$result);
 
         $dbTable = new DBTable('teste','id', $service);
-        $dbTable->setAdapter($this->getAdapterMock());
+        $dbTable->setAdapter($this->getAdapterMock())->setPrototype($result);
 
         $dbTable->find('1');
+    }
+
+    public function testInvalidPrototype()
+    {
+        $this->setExpectedException('Exception','Prototype must be an object');
+        $service = $this->getServiceManager();
+
+        $dbTable = new DBTable('teste', 'id', $service);
+        $dbTable->setPrototype(null);
+    }
+
+    public function testInvalidPrototypeMethod()
+    {
+        $this->setExpectedException('Exception','Prototype must implement exchangeArray method');
+        $service = $this->getServiceManager();
+
+        $dbTable = new DBTable('teste', 'id', $service);
+        $dbTable->setPrototype(new \StdClass);
     }
 
     /**
