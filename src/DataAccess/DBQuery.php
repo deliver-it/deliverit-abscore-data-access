@@ -163,12 +163,17 @@ class DBQuery
                 $this->createJoin($select, $join);
             }
             // define where conditions
-            $select->where($this->where);
+            $select->where($this->getWhere());
 
             $this->select = $select;
         }
 
         return $this->select;
+    }
+
+    public function getWhere()
+    {
+        return $this->where;
     }
 
     /**
@@ -195,9 +200,13 @@ class DBQuery
             if ($table instanceof DBTable) {
                 $alias = $table->getTableName();
             }
-            foreach ($conditions as $condition) {
-                $condition = str_replace('$1', $alias, $condition);
-                $this->where[] = $condition;
+            foreach ($conditions as $key => $condition) {
+                if (is_string($key)) {
+                    $this->where[str_replace('$1', $alias, $key)] = $condition;
+                } else {
+                    $condition = str_replace('$1', $alias, $condition);
+                    $this->where[] = $condition;
+                }
             }
         }
 
@@ -252,11 +261,11 @@ class DBQuery
             $aliasOld = (string)$b;
         }
 
-        if (!$this->addNode($table, $alias, $columns, $aliasOld)) {
+        if (!($node = $this->addNode($table, $alias, $columns, $aliasOld))) {
             throw new \RuntimeException('The table '. $aliasOld.' was not identified');
         }
 
-        $this->joins[] = array('table' => $table, 'alias' => $alias, 'related' => $b, 'columns' => $columns, 'conditions' => $conditions, 'type' => $type);
+        $this->joins[] = array('table' => $table, 'alias' => $alias, 'related' => ['node' => $node, 'alias' => $aliasOld ], 'columns' => $columns, 'conditions' => $conditions, 'type' => $type);
 
 
         return $this;
@@ -327,10 +336,10 @@ class DBQuery
                     'children' => array(),
                     'columns' => $columns,
                 );
-                return true;
+                return $child['node'];
             } else {
-                if ($this->addSubNode($index, $new, $alias, $child['children'], $columns)) {
-                    return true;
+                if (($aux = $this->addSubNode($index, $new, $alias, $child['children'], $columns))) {
+                    return $aux;
                 }
             }
         }
@@ -357,7 +366,7 @@ class DBQuery
         $cols = $this->normalizeColumns($join['alias'], $cols);
         $conditions = str_replace(
             array('$1', '$2'),
-            array($join['alias'], $join['related']->getTableName()),
+            array($join['alias'], $join['related']['alias']),
             $join['conditions']
         );
         $name = $join['table']->getTableName();
@@ -430,7 +439,11 @@ class DBQuery
                         $localConditions[$column_name] = $value;
                     }
                     // is this column a requested column?
-                    if (in_array($realName, $node['columns']) || in_array($realName, array_keys($node['columns']))) {
+                    if (in_array($realName, $node['columns'])) {
+                        $index = array_search($realName, $node['columns']);
+                        if (is_string($index)) {
+                            $realName = $index;
+                        }
                         $info[$realName] = $value;
                     }
                 }
