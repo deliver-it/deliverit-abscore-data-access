@@ -109,4 +109,10 @@ class Driver implements DriverInterface
 
         return $this;
     }
+
+    public function setConnection(Connection $connection)
+    {
+        $this->connection = $connection;
+        return $this;
+    }
 }
