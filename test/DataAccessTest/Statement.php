@@ -49,6 +49,14 @@ class Statement extends StatementContainer implements StatementInterface
      */
     public function execute($parameters = null)
     {
+        $sql = $this->getSql();
+        if (preg_match('/COUNT/', $sql) === 1) {
+            $col = 'COUNT(1)';
+            if (preg_match('/COUNT\(1\) AS "([a-zA-Z]+)"/', $sql, $match)) {
+                $col = $match[1];
+            }
+            return new \ArrayIterator([[$col => count($this->data)]]);
+        }
         return $this->data;
     }
 }

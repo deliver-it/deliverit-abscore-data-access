@@ -62,13 +62,10 @@ class DBTableTest extends PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('ABSCore\DataAccess\Exception\UnknowRegistryException','registry not found');
         $dbTable = new DBTable('teste','id', $this->getServiceManager());
-        $result = new ResultSet();
-        $result->initialize(array());
-        $tableMock = $this->getTableGatewayMock();
-        $tableMock->expects($this->once())->method('select')->will($this->returnValue($result));
 
-
-        $dbTable->setTableGateway($tableMock);
+        $driver = new Driver;
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
         $dbTable->find('1');
     }
 
@@ -82,8 +79,9 @@ class DBTableTest extends PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('Exception', '2 keys are expected but 1 was passed');
         $dbTable = new DBTable('teste',array('id','id2'), $this->getServiceManager());
-        $tableMock = $this->getTableGatewayMock();
-        $dbTable->setTableGateway($tableMock);
+        $driver = new Driver;
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
         $this->assertNotNull($dbTable->find('1'));
     }
 
@@ -97,8 +95,9 @@ class DBTableTest extends PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('Exception', 'The key "teste" is not a valid primary key (id)');
         $dbTable = new DBTable('teste','id', $this->getServiceManager());
-        $tableMock = $this->getTableGatewayMock();
-        $dbTable->setTableGateway($tableMock);
+        $driver = new Driver;
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
         $this->assertNotNull($dbTable->find(array('teste' => 1)));
     }
 
@@ -111,7 +110,12 @@ class DBTableTest extends PHPUnit_Framework_TestCase
     public function testFind()
     {
         $dbTable = new DBTable('teste','id', $this->getServiceManager());
-        $dbTable->setAdapter($this->getAdapterMock());
+        $driver = new Driver;
+        $result = [['id' => 1, 'col' => 'value']];
+        $statement = new Statement($result);
+        $driver->setStatement($statement);
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
         $this->assertNotNull($dbTable->find('1'));
     }
 
@@ -124,11 +128,12 @@ class DBTableTest extends PHPUnit_Framework_TestCase
     public function testFindWithMultipleKeys()
     {
         $dbTable = new DBTable('teste',array('id','id2'), $this->getServiceManager());
-        $resultSet = new ResultSet();
-        $resultSet->initialize(array(array('id' => 1,'id2' => 2)));
-        $tableMock = $this->getTableGatewayMock();
-        $tableMock->expects($this->once())->method('select')->will($this->returnValue($resultSet));
-        $dbTable->setTableGateway($tableMock);
+        $driver = new Driver;
+        $result = [['id' => 1, 'id2' => 2, 'col' => 'value']];
+        $statement = new Statement($result);
+        $driver->setStatement($statement);
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
         $this->assertNotNull($dbTable->find(array('id' => 1, 'id2' => 2)));
     }
 
@@ -140,15 +145,19 @@ class DBTableTest extends PHPUnit_Framework_TestCase
      */
     public function testCustomPrototype()
     {
-        $result = $this->getMockBuilder('ArrayObject')->getMock();
-        $result->expects($this->once())->method('exchangeArray');
 
         $service = $this->getServiceManager();
-
         $dbTable = new DBTable('teste','id', $service);
-        $dbTable->setAdapter($this->getAdapterMock())->setPrototype($result);
 
-        $dbTable->find('1');
+        $driver = new Driver;
+        $result = [['id' => 1, 'col' => 'value']];
+        $statement = new Statement($result);
+        $driver->setStatement($statement);
+        $adapter = new Adapter($driver);
+
+        $dbTable->setAdapter($adapter)->setPrototype(new \Zend\Stdlib\ArrayObject);
+
+        $this->assertInstanceOf('Zend\Stdlib\ArrayObject', $dbTable->find('1'));
     }
 
     public function testInvalidPrototype()
@@ -177,11 +186,20 @@ class DBTableTest extends PHPUnit_Framework_TestCase
      */
     public function testFetchAll()
     {
-        $adapter = $this->getAdapterMock();
         $dbTable = new DBTable('table','id', $this->getServiceManager());
+
+        $driver = new Driver;
+        $result = [['id' => 1, 'col' => 'value'], ['id' => 2, 'col' => 'value2']];
+        $statement = new Statement($result);
+        $driver->setStatement($statement);
+        $adapter = new Adapter($driver);
         $dbTable->setAdapter($adapter);
-        $data = $dbTable->fetchAll(array('id' => 1), array('page' => 1));
+
+        $data = $dbTable->fetchAll(array('id' => 1), array('page' => 2, 'perPage' => 1));
         $this->assertInstanceOf('Zend\Paginator\Paginator',$data);
+
+        $this->assertEquals(2, $data->getPages()->pageCount);
+        $this->assertEquals(2, $data->getPages()->current);
     }
 
     /**
@@ -240,38 +258,6 @@ class DBTableTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Zend\Db\ResultSet\ResultSet',$data);
     }
 
-    /**
-     * Método auxiliar para obter um adaptador Mocado
-     *
-     * @access protected
-     * @return null
-     */
-    protected function getAdapterMock()
-    {
-        $adapter = $this->getMockBuilder('Zend\Db\Adapter\Adapter')
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $platform = $this->getMockBuilder('Zend\Db\Adapter\Platform\Mysql')
-            ->disableOriginalConstructor()
-            ->getMock();
-        $platform->method('getName')->will($this->returnValue(null));
-
-
-        $statement = $this->getMock('Zend\Db\Adapter\Driver\Mysqli\Statement');
-        $statement->method('execute')->will($this->returnValue(array(array('id' => 1))));
-
-        $driver = $this->getMockBuilder('Zend\Db\Adapter\Driver\Mysqli\Mysqli')
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $driver->method('createStatement')->will($this->returnValue($statement));
-
-        $adapter->method('getPlatform')->will($this->returnValue($platform));
-        $adapter->method('getDriver')->will($this->returnValue($driver));
-
-        return $adapter;
-    }
 
     /**
      * Teste para salvamento de um novo resgistro
@@ -342,6 +328,209 @@ class DBTableTest extends PHPUnit_Framework_TestCase
         $dbTable->save(array('id' => 1));
     }
 
+    public function testeBeginTransaction()
+    {
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+
+        $connection = $this->getMockBuilder('ABSCore\DataAccessTest\Connection')
+            ->setMethods(['beginTransaction'])
+            ->getMock();
+        $connection->expects($this->once())->method('beginTransaction');
+
+        $driver = new Driver;
+        $driver->setConnection($connection);
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $dbTable->beginTransaction();
+        $this->assertTrue($dbTable->inTransaction());
+    }
+
+    public function testeCommitTransaction()
+    {
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+
+        $connection = $this->getMockBuilder('ABSCore\DataAccessTest\Connection')
+            ->setMethods(['commit'])
+            ->getMock();
+        $connection->expects($this->once())->method('commit');
+
+        $driver = new Driver;
+        $driver->setConnection($connection);
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $dbTable->beginTransaction();
+        $this->assertTrue($dbTable->inTransaction());
+        $dbTable->commit();
+        $this->assertFalse($dbTable->inTransaction());
+    }
+
+    public function testeRollbackTransaction()
+    {
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+
+        $connection = $this->getMockBuilder('ABSCore\DataAccessTest\Connection')
+            ->setMethods(['rollback'])
+            ->getMock();
+        $connection->expects($this->once())->method('rollback');
+
+        $driver = new Driver;
+        $driver->setConnection($connection);
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $dbTable->beginTransaction();
+        $this->assertTrue($dbTable->inTransaction());
+        $dbTable->rollback();
+        $this->assertFalse($dbTable->inTransaction());
+    }
+
+    public function testTwiceBeginTransaction()
+    {
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+        $dbTable2 = new DBTable('table2','id', $this->getServiceManager());
+
+        $driver = new Driver;
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $dbTable2->setAdapter($adapter);
+
+        $dbTable->beginTransaction();
+        $this->assertTrue($dbTable->inTransaction());
+
+        $dbTable2->beginTransaction();
+        $this->assertFalse($dbTable2->inTransaction());
+    }
+
+    public function testTwiceBeginTransactionSameDbTable()
+    {
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+
+        $driver = new Driver;
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+
+        $dbTable->beginTransaction();
+        $this->assertTrue($dbTable->inTransaction());
+
+        $dbTable->beginTransaction();
+        $this->assertTrue($dbTable->inTransaction());
+    }
+
+    public function testeCommitWhenNotInTransaction()
+    {
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+
+        $connection = $this->getMockBuilder('ABSCore\DataAccessTest\Connection')
+            ->setMethods(['commit'])
+            ->getMock();
+        $connection->expects($this->exactly(0))->method('commit');
+
+        $driver = new Driver;
+        $driver->setConnection($connection);
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $dbTable->commit();
+    }
+
+    public function testeRollbackWhenNotInTransaction()
+    {
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+
+        $connection = $this->getMockBuilder('ABSCore\DataAccessTest\Connection')
+            ->setMethods(['rollback'])
+            ->getMock();
+        $connection->expects($this->exactly(0))->method('rollback');
+
+        $driver = new Driver;
+        $driver->setConnection($connection);
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $dbTable->rollback();
+    }
+
+    public function testeChainRollbackTransaction()
+    {
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+        $dbTable2 = new DBTable('table2','id', $this->getServiceManager());
+
+        $connection = $this->getMockBuilder('ABSCore\DataAccessTest\Connection')
+            ->setMethods(['rollback'])
+            ->getMock();
+        $connection->expects($this->exactly(0))->method('rollback');
+
+        $driver = new Driver;
+        $driver->setConnection($connection);
+
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $dbTable2->setAdapter($adapter);
+
+        $dbTable->beginTransaction();
+        $dbTable2->beginTransaction();
+        $dbTable2->rollback();
+    }
+
+    public function testeChainCommitTransaction()
+    {
+        $dbTable = new DBTable('table','id', $this->getServiceManager());
+        $dbTable2 = new DBTable('table2','id', $this->getServiceManager());
+
+        $connection = $this->getMockBuilder('ABSCore\DataAccessTest\Connection')
+            ->setMethods(['commit'])
+            ->getMock();
+        $connection->expects($this->exactly(0))->method('commit');
+
+        $driver = new Driver;
+        $driver->setConnection($connection);
+
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $dbTable2->setAdapter($adapter);
+
+        $dbTable->beginTransaction();
+        $dbTable2->beginTransaction();
+        $dbTable2->commit();
+    }
+
+    public function testGetServiceLocator()
+    {
+        $service = $this->getServiceManager();
+        $dbTable = new DBTable('table','id', $service);
+        $this->assertEquals($service, $dbTable->getServiceLocator());
+    }
+
+
+    /**
+     * Método auxiliar para obter um adaptador Mocado
+     *
+     * @access protected
+     * @return null
+     */
+    protected function getAdapterMock()
+    {
+        $adapter = $this->getMockBuilder('Zend\Db\Adapter\Adapter')
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $platform = $this->getMockBuilder('Zend\Db\Adapter\Platform\Mysql')
+            ->disableOriginalConstructor()
+            ->getMock();
+        $platform->method('getName')->will($this->returnValue(null));
+
+
+        $statement = $this->getMock('Zend\Db\Adapter\Driver\Mysqli\Statement');
+        $statement->method('execute')->will($this->returnValue(array(array('id' => 1))));
+
+        $driver = $this->getMockBuilder('Zend\Db\Adapter\Driver\Mysqli\Mysqli')
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $driver->method('createStatement')->will($this->returnValue($statement));
+
+        $adapter->method('getPlatform')->will($this->returnValue($platform));
+        $adapter->method('getDriver')->will($this->returnValue($driver));
+
+        return $adapter;
+    }
 
     /**
      * Obtenção de gerenciador de serviços

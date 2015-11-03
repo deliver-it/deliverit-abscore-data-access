@@ -6,6 +6,8 @@ use Zend\Db\Adapter\Driver\ConnectionInterface;
 
 class Connection implements ConnectionInterface
 {
+    protected $inTransaction = false;
+
     /**
      * Get current schema
      *
@@ -63,7 +65,18 @@ class Connection implements ConnectionInterface
      */
     public function beginTransaction()
     {
+        $this->inTransaction = true;
         return $this;
+    }
+
+    public function inTransaction()
+    {
+        return (bool)$this->inTransaction;
+    }
+
+    public function setInTransaction($flag)
+    {
+        $this->inTransaction = $flag;
     }
 
     /**
@@ -73,6 +86,7 @@ class Connection implements ConnectionInterface
      */
     public function commit()
     {
+        $this->inTransaction = false;
         return $this;
     }
 
@@ -83,6 +97,7 @@ class Connection implements ConnectionInterface
      */
     public function rollback()
     {
+        $this->inTransaction = false;
         return $this;
     }
 

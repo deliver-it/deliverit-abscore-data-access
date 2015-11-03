@@ -526,7 +526,7 @@ class DBTable implements DataAccessInterface
         if (!$connection->inTransaction()) {
             $connection->beginTransaction();
             $this->startTrans = true;
-        } else {
+        } else if (!$this->inTransaction()) {
             $this->startTrans = false;
         }
         return $this;
