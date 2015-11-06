@@ -42,7 +42,7 @@ class DBTable implements DataAccessInterface
     /**
      * Nome da tabela no banco de dados
      *
-     * @var string
+     * @var string|\Zend\Db\Sql\TableIdentifier
      * @access protected
      */
     protected $tableName;
@@ -494,10 +494,10 @@ class DBTable implements DataAccessInterface
      */
     protected function setTableName($name)
     {
-        $name = (string)$name;
         if (empty($name)) {
             throw new \Exception('The table name cannot be blank!');
         }
+
         $this->tableName = $name;
 
         return $this;

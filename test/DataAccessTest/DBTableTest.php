@@ -6,6 +6,7 @@ use Zend\ServiceManager\ServiceManager;
 use Zend\ServiceManager\Config as ServiceConfig;
 use Zend\Db\ResultSet\ResultSet;
 use Zend\Db\Adapter\Adapter;
+use Zend\Db\Sql\TableIdentifier;
 use PHPUnit_Framework_TestCase;
 use ReflectionClass;
 
@@ -67,6 +68,17 @@ class DBTableTest extends PHPUnit_Framework_TestCase
         $adapter = new Adapter($driver);
         $dbTable->setAdapter($adapter);
         $dbTable->find('1');
+    }
+
+    public function testConstructWithTableIdentifier()
+    {
+        $identifier = new TableIdentifier('tablename', 'schema');
+        $dbTable = new DBTable($identifier, 'id', $this->getServiceManager());
+        $driver = new Driver;
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $tableGateway = $dbTable->getTableGateway();
+        $this->assertEquals($identifier, $tableGateway->getTable());
     }
 
     /**
