@@ -10,6 +10,7 @@ use Zend\Db\Adapter\AdapterInterface;
 use Zend\Paginator\Adapter\DbTableGateway;
 use Zend\Paginator\Paginator;
 use Zend\Filter\Word\SeparatorToCamelCase;
+use Zend\Db\Sql\TableIdentifier;
 use ArrayObject;
 
 /**
@@ -570,5 +571,19 @@ class DBTable implements DataAccessInterface
             $this->startTrans = false;
         }
         return $this;
+    }
+
+    public function getTableAlias()
+    {
+        $name = $this->getTableName();
+        if ($name instanceof TableIdentifier) {
+            if ($name->hasSchema()) {
+                $name = implode('.', array_reverse($name->getTableAndSchema()));
+            } else {
+                $name = $name->getTable();
+            }
+        }
+
+        return $name;
     }
 }

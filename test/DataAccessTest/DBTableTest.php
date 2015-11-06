@@ -510,6 +510,19 @@ class DBTableTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($service, $dbTable->getServiceLocator());
     }
 
+    public function testGetTableAlias()
+    {
+        $service = $this->getServiceManager();
+        $dbTable = new DBTable('table','id', $service);
+        $this->assertEquals('table', $dbTable->getTableAlias());
+
+        $dbTable = new DBTable(new TableIdentifier('table','schema'), 'id', $service);
+        $this->assertEquals('schema.table', $dbTable->getTableAlias());
+
+        $dbTable = new DBTable(new TableIdentifier('table'), 'id', $service);
+        $this->assertEquals('table', $dbTable->getTableAlias());
+    }
+
 
     /**
      * Método auxiliar para obter um adaptador Mocado
