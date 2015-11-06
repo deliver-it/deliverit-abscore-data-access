@@ -6,6 +6,7 @@ use Zend\ServiceManager\ServiceManager;
 use Zend\ServiceManager\Config as ServiceConfig;
 use Zend\Db\ResultSet\ResultSet;
 use Zend\Db\Adapter\Adapter;
+use Zend\Db\Sql\TableIdentifier;
 use PHPUnit_Framework_TestCase;
 use ReflectionClass;
 
@@ -67,6 +68,17 @@ class DBTableTest extends PHPUnit_Framework_TestCase
         $adapter = new Adapter($driver);
         $dbTable->setAdapter($adapter);
         $dbTable->find('1');
+    }
+
+    public function testConstructWithTableIdentifier()
+    {
+        $identifier = new TableIdentifier('tablename', 'schema');
+        $dbTable = new DBTable($identifier, 'id', $this->getServiceManager());
+        $driver = new Driver;
+        $adapter = new Adapter($driver);
+        $dbTable->setAdapter($adapter);
+        $tableGateway = $dbTable->getTableGateway();
+        $this->assertEquals($identifier, $tableGateway->getTable());
     }
 
     /**
@@ -496,6 +508,19 @@ class DBTableTest extends PHPUnit_Framework_TestCase
         $service = $this->getServiceManager();
         $dbTable = new DBTable('table','id', $service);
         $this->assertEquals($service, $dbTable->getServiceLocator());
+    }
+
+    public function testGetTableAlias()
+    {
+        $service = $this->getServiceManager();
+        $dbTable = new DBTable('table','id', $service);
+        $this->assertEquals('table', $dbTable->getTableAlias());
+
+        $dbTable = new DBTable(new TableIdentifier('table','schema'), 'id', $service);
+        $this->assertEquals('schema.table', $dbTable->getTableAlias());
+
+        $dbTable = new DBTable(new TableIdentifier('table'), 'id', $service);
+        $this->assertEquals('table', $dbTable->getTableAlias());
     }
 
 

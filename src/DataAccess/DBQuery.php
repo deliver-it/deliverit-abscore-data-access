@@ -86,7 +86,7 @@ class DBQuery
     public function __construct(DBTable $tableFrom, $columns, $service)
     {
         $this->from = array('table' => $tableFrom, 'columns' => $columns);
-        $this->addNode($tableFrom, $tableFrom->getTableName(), $columns);
+        $this->addNode($tableFrom, $tableFrom->getTableAlias(), $columns);
         $this->setServiceLocator($service);
     }
 
@@ -155,7 +155,7 @@ class DBQuery
                     $cols[] = $col;
                 }
             }
-            $columns = $this->normalizeColumns($this->from['table']->getTableName(), $cols);
+            $columns = $this->normalizeColumns($this->from['table']->getTableAlias(), $cols);
             // define columns
             $select->columns($columns);
             // loop to add joins
@@ -198,7 +198,7 @@ class DBQuery
             }
             $alias = $table;
             if ($table instanceof DBTable) {
-                $alias = $table->getTableName();
+                $alias = $table->getTableAlias();
             }
             foreach ($conditions as $key => $condition) {
                 if (is_string($key)) {
@@ -252,11 +252,11 @@ class DBQuery
         }
 
         if (is_null($alias)) {
-            $alias = $table->getTableName();
+            $alias = $table->getTableAlias();
         }
 
         if ($b instanceof DBTable) {
-            $aliasOld = $b->getTableName();
+            $aliasOld = $b->getTableAlias();
         } else {
             $aliasOld = (string)$b;
         }

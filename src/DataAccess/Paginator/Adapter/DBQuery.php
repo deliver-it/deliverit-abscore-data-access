@@ -71,7 +71,7 @@ class DBQuery implements AdapterInterface
         $result = $statement->execute();
 
         // make conditions
-        $tableName = $table->getTableName();
+        $tableName = $table->getTableAlias();
         $conditions = array();
         foreach ($result as $row) {
             foreach ($row as $col => $value) {
@@ -119,7 +119,7 @@ class DBQuery implements AdapterInterface
     protected function getPrimaryKeys()
     {
         $table = $this->query->getFromTable();
-        $tableName = $table->getTableName();
+        $tableName = $table->getTableAlias();
         $ids = $table->getPrimaryKey();
         foreach ($ids as &$id) {
             $id = $tableName . '.' . $id;

@@ -6,6 +6,7 @@ require 'Driver.php';
 
 use Zend\ServiceManager;
 use Zend\Db\Adapter\Adapter;
+use Zend\Db\Sql\TableIdentifier;
 
 use PHPUnit_Framework_TestCase;
 
@@ -28,6 +29,21 @@ class DBQueryTest extends PHPUnit_Framework_TestCase
 
         $this->assertArrayInto(['alias' => 'value1', 'col2' => 'value2'], $result->toArray()[0]);
 
+    }
+
+    public function testConstructWithTableIdentifier()
+    {
+        $service = new ServiceManager\ServiceManager(new ServiceManager\Config());
+        $dbTable = new DataAccess\DBTable(new TableIdentifier('table1', 'schema'), 'id', $service);
+        $driver = new Driver;
+        $statement = new Statement([['t0_id' => 1, 't0_col1' => 'value1', 't0_col2' => 'value2']]);
+        $driver->setStatement($statement);
+        $dbTable->setAdapter(new Adapter($driver));
+
+        $dbQuery = new DataAccess\DBQuery($dbTable, ['alias' => 'col1', 'col2'], $service);
+        $result = $dbQuery->fetch();
+
+        $this->assertArrayInto(['alias' => 'value1', 'col2' => 'value2'], $result->toArray()[0]);
     }
 
     public function testJoin()
@@ -62,7 +78,7 @@ class DBQueryTest extends PHPUnit_Framework_TestCase
         $dbTable2 = new DataAccess\DBTable('table2', 'id', $service);
         $dbTable2->setAdapter($adapter);
 
-        $dbTable3 = new DataAccess\DBTable('table3', 'id', $service);
+        $dbTable3 = new DataAccess\DBTable(new TableIdentifier('table3', 'schema'), 'id', $service);
         $dbTable3->setAdapter($adapter);
 
         $dbQuery = new DataAccess\DBQuery($dbTable, ['col1'], $service);
@@ -173,23 +189,23 @@ class DBQueryTest extends PHPUnit_Framework_TestCase
         $dbTable = new DataAccess\DBTable('table1', 'id', $service);
         $dbTable->setAdapter($adapter);
 
-        $dbTable2 = new DataAccess\DBTable('table2', 'id', $service);
+        $dbTable2 = new DataAccess\DBTable(new TableIdentifier('table2', 'schema'), 'id', $service);
         $dbTable2->setAdapter($adapter);
 
         $dbQuery = new DataAccess\DBQuery($dbTable, ['col1'], $service);
         $dbQuery->join($dbTable2, $dbTable, '$1.id = $2.table2_id', ['col2'])
-            ->addWhereConditions(['table1.id' => 1, 'table2.id' => 3])
+            ->addWhereConditions(['table1.id' => 1, 'schema.table2.id' => 3])
             ->addWhereConditions('table1.col = \'value\'')
             ->addWhereConditions(['$1.col2' => 1, '$1.col3 = 3'], $dbTable)
             ->addWhereConditions('$1.col4 = 1', $dbTable2);
 
         $expected = [
             'table1.id' => 1,
-            'table2.id' => 3,
+            'schema.table2.id' => 3,
             'table1.col = \'value\'',
             'table1.col2' => 1,
             'table1.col3 = 3',
-            'table2.col4 = 1'
+            'schema.table2.col4 = 1'
         ];
 
         $this->assertArrayInto($expected, $dbQuery->getWhere());

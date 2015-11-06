@@ -10,6 +10,7 @@ use Zend\Db\Adapter\AdapterInterface;
 use Zend\Paginator\Adapter\DbTableGateway;
 use Zend\Paginator\Paginator;
 use Zend\Filter\Word\SeparatorToCamelCase;
+use Zend\Db\Sql\TableIdentifier;
 use ArrayObject;
 
 /**
@@ -42,7 +43,7 @@ class DBTable implements DataAccessInterface
     /**
      * Nome da tabela no banco de dados
      *
-     * @var string
+     * @var string|\Zend\Db\Sql\TableIdentifier
      * @access protected
      */
     protected $tableName;
@@ -494,10 +495,10 @@ class DBTable implements DataAccessInterface
      */
     protected function setTableName($name)
     {
-        $name = (string)$name;
         if (empty($name)) {
             throw new \Exception('The table name cannot be blank!');
         }
+
         $this->tableName = $name;
 
         return $this;
@@ -570,5 +571,19 @@ class DBTable implements DataAccessInterface
             $this->startTrans = false;
         }
         return $this;
+    }
+
+    public function getTableAlias()
+    {
+        $name = $this->getTableName();
+        if ($name instanceof TableIdentifier) {
+            if ($name->hasSchema()) {
+                $name = implode('.', array_reverse($name->getTableAndSchema()));
+            } else {
+                $name = $name->getTable();
+            }
+        }
+
+        return $name;
     }
 }
