@@ -18,7 +18,14 @@ class DBQuery implements AdapterInterface
      */
     public function __construct(Query $query)
     {
+        $this->setQuery($query);
+    }
+
+    protected function setQuery(Query $query)
+    {
         $this->query = $query;
+
+        return $this;
     }
 
     /**
@@ -27,11 +34,11 @@ class DBQuery implements AdapterInterface
      * @param int $offset
      * @param int $itemCountPerPage
      * @access public
-     * @return array
+     * @return \ArrayIterator
      */
     public function getItems($offset, $itemCountPerPage)
     {
-        $query = $this->query;
+        $query = $this->getQuery();
         $table = $query->getFromTable();
 
         // clone Select to get IDS to filter
@@ -47,11 +54,6 @@ class DBQuery implements AdapterInterface
 
         // get IDS
         $internalSelect->columns($ids);
-
-        $joinConditions = [];
-        foreach ($ids as $id) {
-            $joinConditions[] = "t.$id = s.$id";
-        }
 
         $distinctSelect = new Sql\Select();
         $distinctSelect
@@ -72,10 +74,11 @@ class DBQuery implements AdapterInterface
 
         // make conditions
         $tableName = $table->getTableAlias();
-        $conditions = array();
+        $conditions = [];
         foreach ($result as $row) {
             foreach ($row as $col => $value) {
-                $conditions[$tableName.'.'.$col][] = $value;
+                $column = $this->getPlatform()->quoteIdentifierInFragment($tableName.'.'.$col);
+                $conditions[$column][] = $value;
             }
         }
         // fetch curret page
@@ -86,6 +89,17 @@ class DBQuery implements AdapterInterface
     }
 
     /**
+     * Get Database Platform
+     *
+     * @access protected
+     * @return \Zend\Db\Adapter\Platform\PlatformInterface
+     */
+    protected function getPlatform()
+    {
+        return $this->getQuery()->getFromTable()->getTableGateway()->getAdapter()->getPlatform();
+    }
+
+    /**
      * Get total of items
      *
      * @access public
@@ -93,36 +107,48 @@ class DBQuery implements AdapterInterface
      */
     public function count()
     {
-        $select = clone $this->query->getSelect();
-        $query = $this->query;
+        $query = $this->getQuery();
+        $select = clone $query->getSelect();
+
         $table = $query->getFromTable();
+
         $joins = $select->getRawState($select::JOINS);
+
         $select->reset($select::JOINS);
-        $ids = $table->getPrimaryKey();
+
         foreach ($joins as $join) {
-            $select->join($join['name'], $join['on'], array(), $join['type']);
+            $select->join($join['name'], $join['on'], [], $join['type']);
         }
+
         $countExpression = new Sql\Expression('COUNT(DISTINCT '.implode(', ', $this->getPrimaryKeys()).')');
         $select->columns(array('c' => $countExpression));
-        $table = $this->query->getFromTable();
+
+        $table = $query->getFromTable();
         $result = $table->getTableGateway()->selectWith($select);
+
         $count = (int)$result->current()['c'];
         return $count;
     }
 
+    public function getQuery()
+    {
+        return $this->query;
+    }
+
     /**
-     * Get Primary Key columns with prefix
+     * Get Primary Key columns with prefix and quoted
      *
      * @access protected
      * @return array
      */
     protected function getPrimaryKeys()
     {
-        $table = $this->query->getFromTable();
+        $table = $this->getQuery()->getFromTable();
         $tableName = $table->getTableAlias();
         $ids = $table->getPrimaryKey();
         foreach ($ids as &$id) {
-            $id = $tableName . '.' . $id;
+            $id = $this->getPlatform()->quoteIdentifierInFragment($tableName . '.' . $id);
+
         }
         return $ids;
     }
