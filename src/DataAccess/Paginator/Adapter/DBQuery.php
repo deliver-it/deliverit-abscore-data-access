@@ -77,7 +77,7 @@ class DBQuery implements AdapterInterface
         $conditions = [];
         foreach ($result as $row) {
             foreach ($row as $col => $value) {
-                $column = $this->getPlatform()->quoteIdentifierInFragment($tableName.'.'.$col);
+                $column = $tableName.'.'.$col;
                 $conditions[$column][] = $value;
             }
         }
