@@ -55,18 +55,27 @@ class DBQuery implements AdapterInterface
         // get IDS
         $internalSelect->columns($ids);
 
-        $distinctSelect = new Sql\Select();
-        $distinctSelect
-            ->from(['internalSelect' => $internalSelect])
-            ->quantifier(Sql\Select::QUANTIFIER_DISTINCT);
-
         $adapter = $table->getTableGateway()->getAdapter();
-        $select = new Sql\Select();
-        $select
-            ->columns($ids)
-            ->from(['distinctSelect' => $distinctSelect])
-            ->limit($itemCountPerPage)
-            ->offset($offset);
+
+        if ($adapter->getPlatform()->getName() == 'Oracle') {
+            $distinctSelect = new Sql\Select();
+            $distinctSelect
+                ->from(['internalSelect' => $internalSelect])
+                ->quantifier(Sql\Select::QUANTIFIER_DISTINCT)
+                ->columns(['*','internalRowNum' => new Sql\Expression('ROWNUM')])
+                ->order('internalRowNum');
+
+            $select = new Sql\Select();
+            $select
+                ->columns($ids)
+                ->from(['distinctSelect' => $distinctSelect])
+                ->limit($itemCountPerPage)
+                ->offset($offset);
+        } else {
+            $select = $internalSelect->limit($itemCountPerPage)
+                ->offset($offset)
+                ->quantifier(Sql\Select::QUANTIFIER_DISTINCT);
+        }
 
         $sql = new Sql\Sql($adapter);
         $statement = $sql->prepareStatementForSqlObject($select);
@@ -115,6 +124,7 @@ class DBQuery implements AdapterInterface
         $joins = $select->getRawState($select::JOINS);
 
         $select->reset($select::JOINS);
+        $select->reset($select::ORDER);
 
         foreach ($joins as $join) {
             $select->join($join['name'], $join['on'], [], $join['type']);
