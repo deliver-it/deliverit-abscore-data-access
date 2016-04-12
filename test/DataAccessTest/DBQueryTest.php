@@ -20,7 +20,7 @@ class DBQueryTest extends PHPUnit_Framework_TestCase
         $service = new ServiceManager\ServiceManager(new ServiceManager\Config());
         $dbTable = new DataAccess\DBTable('table1', 'id', $service);
         $driver = new Driver;
-        $statement = new Statement([['t0_id' => 1, 't0_col1' => 'value1', 't0_col2' => 'value2']]);
+        $statement = new Statement([['t0_id' => 1, 't0_alias' => 'value1', 't0_col2' => 'value2']]);
         $driver->setStatement($statement);
         $dbTable->setAdapter(new Adapter($driver));
 
@@ -36,7 +36,7 @@ class DBQueryTest extends PHPUnit_Framework_TestCase
         $service = new ServiceManager\ServiceManager(new ServiceManager\Config());
         $dbTable = new DataAccess\DBTable(new TableIdentifier('table1', 'schema'), 'id', $service);
         $driver = new Driver;
-        $statement = new Statement([['t0_id' => 1, 't0_col1' => 'value1', 't0_col2' => 'value2']]);
+        $statement = new Statement([['t0_id' => 1, 't0_alias' => 'value1', 't0_col2' => 'value2']]);
         $driver->setStatement($statement);
         $dbTable->setAdapter(new Adapter($driver));
 
