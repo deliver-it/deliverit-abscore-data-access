@@ -445,6 +445,9 @@ class DBQuery
                             $realName = $index;
                         }
                         $info[$realName] = $value;
+                    // is this column an alias?
+                    } elseif (isset($node['columns'][$realName])) {
+                        $info[$realName] = $value;
                     }
                 }
             }
