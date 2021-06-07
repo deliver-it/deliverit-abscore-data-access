@@ -124,7 +124,7 @@ class DBSimpleQuery
      *
      * @return string|ResultSet
      */
-    public function fetchAll()
+    public function records()
     {
         try {
             $query = new DBTable($this->getEntity(), 'id', $this->getServiceLocator());
